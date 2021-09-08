@@ -24,33 +24,39 @@ namespace GlibcOffsetGen
         {
             var dir = Directory.GetCurrentDirectory();
             
-            var index = (await DownloadFileText(gnuServer)).Split(Environment.NewLine);
-
-            foreach (var line in index)
+            try
             {
-                var match = Regex.Match(line, "href=\"(glibc-([\\d.]*).tar.xz)\""); 
-                if (match.Success)
-                {
-                    var name = match.Groups[1].Value;
-                    var version = Version.Parse(match.Groups[2].Value);
+                var index = (await DownloadFileText(gnuServer)).Split(Environment.NewLine);
 
-                    if (!File.Exists(name) && version >= minVersion)
+                foreach (var line in index)
+                {
+                    var match = Regex.Match(line, "href=\"(glibc-([\\d.]*).tar.xz)\""); 
+                    if (match.Success)
                     {
-                        try
+                        var name = match.Groups[1].Value;
+                        var version = Version.Parse(match.Groups[2].Value);
+
+                        if (!File.Exists(name) && version >= minVersion)
                         {
-                            Console.WriteLine($"Downloading {name}");
-                            using var fileStream = File.Create(name);
-                            await DownloadFileStream($"{gnuServer}{name}", fileStream);
-                        }
-                        catch
-                        {
-                            File.Delete(name);
-                            throw;
+                            try
+                            {
+                                Console.WriteLine($"Downloading {name}");
+                                using var fileStream = File.Create(name);
+                                await DownloadFileStream($"{gnuServer}{name}", fileStream);
+                            }
+                            catch
+                            {
+                                File.Delete(name);
+                                throw;
+                            }
                         }
                     }
                 }
             }
-
+            catch
+            {
+                Console.Error.WriteLine("Cannot get glibc releases. Using offline archives instead...");
+            }
 
             // To avoid the file list being updated.
             var fileList = Directory.GetFiles(dir, "*.xz");
