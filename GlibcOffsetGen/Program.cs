@@ -165,8 +165,13 @@ extern int32_t printf( const char *restrict format, ... );
 #define offsetof(TYPE, MEMBER) __builtin_offsetof (TYPE, MEMBER)
 #define member_size(type, member) sizeof(((type *)0)->member)
 
-#define BEGIN_STRUCT(NAME) printf(""    [StructLayout(LayoutKind.Explicit, Size = %i)]\n    partial unsafe struct %s\n    {{\n"", (int32_t)sizeof(struct NAME), #NAME""_{glibcVersion.Replace(".", "_")}_{bits}"");
-#define DECLARE(structName, name)     printf(""        [FieldOffset(%i)]\n        fixed byte %s[%i];\n"", (int32_t)offsetof(struct structName, name), #name, (int32_t)member_size(struct structName, name));
+#define BEGIN_STRUCT(NAME) printf(""    [StructLayout(LayoutKind.Explicit, Size = %i)]\n    unsafe partial struct %s\n    {{\n"", (int32_t)sizeof(struct NAME), #NAME""_{glibcVersion.Replace(".", "_")}_{bits}"");
+// Some extra handling, as C# does not allow 0-byte arrays.
+#define DECLARE(structName, name)    \
+if (member_size(struct structName, name) != 0) \
+printf(""        [FieldOffset(%i)]\n        fixed byte %s[%i];\n"", (int32_t)offsetof(struct structName, name), #name, (int32_t)member_size(struct structName, name)); \
+else \
+printf(""        byte* %s\n        {{\n            get\n            {{\n                fixed (void* _thisPtr = &this)\n                {{\n                    return (byte*)_thisPtr + %i;\n                }}\n            }}\n        }}\n"", #name, (int32_t)offsetof(struct structName, name));
 #define END_STRUCT(NAME)     printf(""    }}\n\n"");
 
 int main()
