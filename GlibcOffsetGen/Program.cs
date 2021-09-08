@@ -510,7 +510,8 @@ int main()
 
                 foreach (var fragment in structFragments)
                 {
-                    if (fragment.StartsWith(memberPrefix))
+                    // Take the pointers into account, too.
+                    if (fragment.StartsWith(memberPrefix) || fragment.StartsWith($"*{memberPrefix}"))
                     {
                         // Fucking bit fields: 
                         if (fragment.Contains(":"))
